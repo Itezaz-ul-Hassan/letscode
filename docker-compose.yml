@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: itezaz/letscode:backend
+    command: sh -c "gunicorn letsCode.wsgi:application --bind 0.0.0.0:8000"
+    env_file:
+      - ./.env
+    networks:
+      - nginxnet
+    depends_on:
+      - docker
+    volumes:
+      - dockersocket:/var/run/
+      - docerimages:/var/lib/docker
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BACKEND_URL=http://44.208.166.173/backend/
+    image: itezaz/letscode:frontend
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: itezaz/letscode:nginx
+    ports:
+      - 80:80
+    networks:
+      - nginxnet
+    depends_on:
+      - frontend
+      - backend
+
+  docker:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - dockersocket:/var/run/
+      - docerimages:/var/lib/docker
+
+volumes:
+  dockersocket:
+  docerimages:
+
+networks:
+  nginxnet:
